@@ -29,7 +29,6 @@ jobs:
 
       - name: 创建必要目录
         run: |
-          mkdir -p ${{ github.workspace }}/py
           mkdir -p ${{ github.workspace }}/ip
           mkdir -p ${{ github.workspace }}/tv
           echo "必要目录已创建"
