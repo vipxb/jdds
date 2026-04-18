@@ -1,5 +1,8 @@
 name: Run 酒店
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   schedule:
     - cron: "0 9,21 * * *"
@@ -16,7 +19,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -27,8 +30,9 @@ jobs:
 
       - name: 创建必要目录
         run: |
-          mkdir -p ${{ github.workspace }}/tv
+          mkdir -p ${{ github.workspace }}/py
           mkdir -p ${{ github.workspace }}/ip
+          mkdir -p ${{ github.workspace }}/tv
           echo "必要目录已创建"
 
       - name: 从库复制文件
@@ -94,6 +98,15 @@ jobs:
           else
             echo "警告: 未找到生成的文件 tv/jdtv.txt"
             exit 1
+          fi
+          
+          # 同时更新 ip/酒店.ip 文件到私有库（如果有变化）
+          if [ -f "${{ github.workspace }}/ip/酒店.ip" ]; then
+            cp ${{ github.workspace }}/ip/酒店.ip /tmp/private_repo/ip/酒店.ip
+            echo "已更新 ip/酒店.ip 到私有库"
+            git add ip/酒店.ip
+            git commit -m "自动更新：ip/酒店.ip $(date +'%Y-%m-%d %H:%M:%S')" || echo "ip/酒店.ip 没有更改"
+            git push origin main || echo "推送失败或无需推送"
           fi
           
           echo "=== 私有库文件上传完成 ==="
