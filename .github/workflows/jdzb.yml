@@ -1,4 +1,4 @@
-name: Run ITV酒店
+name: Run 酒店
 
 on:
   schedule:
