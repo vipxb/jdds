@@ -27,7 +27,8 @@ jobs:
 
       - name: 创建必要目录
         run: |
-          mkdir -p ${{ github.workspace }}/py
+          mkdir -p ${{ github.workspace }}/tv
+          mkdir -p ${{ github.workspace }}/ip
           echo "必要目录已创建"
 
       - name: 从库复制文件
@@ -36,40 +37,42 @@ jobs:
         run: |
           echo "=== 开始从库复制文件 ==="
           
-          # 克隆库到临时目录
-          git clone https://${{ secrets.REPOIPTV }}@github.com/myysc/zbjdtv.git /tmp/private_repo
+          # 克隆私有仓库到临时目录
+          git clone https://${{ secrets.REPOIPTV }}@github.com/vipxb/jdzb.git /tmp/private_repo
           
-          # 复制 itv_jd.py 文件
-          if [ -f "/tmp/private_repo/py/itv_jd.py" ]; then
-            cp /tmp/private_repo/py/itv_jd.py ${{ github.workspace }}/py/itv_jd.py
-            echo "已复制 itv_jd.py"
+          # 复制 jdtv.py 文件
+          if [ -f "/tmp/private_repo/jdtv.py" ]; then
+            cp /tmp/private_repo/jdtv.py ${{ github.workspace }}/jdtv.py
+            echo "已复制 jdtv.py"
           else
-            echo "警告: 库中未找到 py/itv_jd.py 文件"
+            echo "警告: 库中未找到 jdtv.py 文件"
+            exit 1
           fi
           
-          # 复制 ip_urls.txt 文件
-          if [ -f "/tmp/private_repo/jdip/ip_urls.txt" ]; then
-            cp /tmp/private_repo/jdip/ip_urls.txt ${{ github.workspace }}/ip_urls.txt
-            echo "已复制 ip_urls.txt"
+          # 复制 ip/酒店.ip 文件
+          if [ -f "/tmp/private_repo/ip/酒店.ip" ]; then
+            cp /tmp/private_repo/ip/酒店.ip ${{ github.workspace }}/ip/酒店.ip
+            echo "已复制 ip/酒店.ip"
           else
-            echo "警告: 库中未找到 ip_urls.txt 文件"
+            echo "警告: 库中未找到 ip/酒店.ip 文件"
+            exit 1
           fi
           
           echo "=== 库文件复制完成 ==="
 
-      - name: Run ITV酒店
+      - name: Run jdtv.py
         run: |
-          echo "=== Starting itv_jd.py ==="
-          python py/itv_jd.py
-          echo "=== Finished itv_jd.py ==="
+          echo "=== Starting jdtv.py ==="
+          python jdtv.py
+          echo "=== Finished jdtv.py ==="
 
-      - name: 上传文件到库
+      - name: 上传文件到私有库
         env:
           REPOIPTV: ${{ secrets.REPOIPTV }}
         run: |
-          echo "=== 开始上传文件到库 ==="
+          echo "=== 开始上传文件到私有库 ==="
           
-          # 进入库目录
+          # 进入私有库目录
           cd /tmp/private_repo
           
           # 配置 git
@@ -79,25 +82,38 @@ jobs:
           # 创建 tv 目录（如果不存在）
           mkdir -p tv
           
-          # 复制生成的 itvlist.txt 到库的 tv 文件夹并重命名为 jiudian.txt
-          if [ -f "${{ github.workspace }}/itvlist.txt" ]; then
-            cp ${{ github.workspace }}/itvlist.txt /tmp/private_repo/tv/jiudian.txt
-            echo "已复制 itvlist.txt 到库 tv/jiudian.txt"
+          # 复制生成的 jdtv.txt 到私有库的 tv 目录
+          if [ -f "${{ github.workspace }}/tv/jdtv.txt" ]; then
+            cp ${{ github.workspace }}/tv/jdtv.txt /tmp/private_repo/tv/jdtv.txt
+            echo "已复制 tv/jdtv.txt 到私有库 tv/jdtv.txt"
             
-            # 提交并推送更改到库
-            git add tv/jiudian.txt
-            git commit -m "自动更新：jiudian.txt $(date +'%Y-%m-%d %H:%M:%S')" || echo "没有更改需要提交"
+            # 提交并推送更改到私有库
+            git add tv/jdtv.txt
+            git commit -m "自动更新：jdtv.txt $(date +'%Y-%m-%d %H:%M:%S')" || echo "没有更改需要提交"
             git push origin main || echo "推送失败或无需推送"
           else
-            echo "警告: 未找到生成的文件 itvlist.txt"
+            echo "警告: 未找到生成的文件 tv/jdtv.txt"
+            exit 1
           fi
           
-          echo "=== 库文件上传完成 ==="
+          echo "=== 私有库文件上传完成 ==="
 
-      - name: Commit and push results
+      - name: 提交到当前仓库
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add ip_urls.txt
-          git commit -m "自定更新： ip_urls.txt" || echo "No changes"
-          git push --force
+          echo "=== 开始提交到当前仓库 ==="
+          
+          # 配置 git
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          
+          # 添加并提交更新后的 ip/酒店.ip 文件
+          if [ -f "${{ github.workspace }}/ip/酒店.ip" ]; then
+            git add ip/酒店.ip
+            git commit -m "自动更新：ip/酒店.ip $(date +'%Y-%m-%d %H:%M:%S')" || echo "没有更改需要提交"
+            git push origin main || echo "推送失败或无需推送"
+            echo "已提交 ip/酒店.ip 到当前仓库"
+          else
+            echo "警告: 未找到 ip/酒店.ip 文件"
+          fi
+          
+          echo "=== 当前仓库提交完成 ==="
